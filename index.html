@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+        <title>Solitaire</title>
+        <link rel="stylesheet" type="text/css" href="styles.css">
+        <script src="throttle.js"></script>
+        <script src="main.js" defer></script>
+    </head>
+    <body>
+        <main>
+            <div class="solitaire-container">
+                <div class="row">
+                    <div class="foundations">
+                        <div class="foundation-slot foundations-slot-1"></div>
+                        <div class="foundation-slot foundations-slot-2"></div>
+                        <div class="foundation-slot foundations-slot-3"></div>
+                        <div class="foundation-slot foundations-slot-4"></div>
+                    </div>
+                    <div class="reserve">
+                        <div class="reserve-current"></div>
+                        <div class="reserve-stock"></div>
+                    </div>
+                </div>
+                <div class="tableau">
+                    <div class="tableau-slot tableau-slot-1" data-value="empty"></div>
+                    <div class="tableau-slot tableau-slot-2" data-value="empty"></div>
+                    <div class="tableau-slot tableau-slot-3" data-value="empty"></div>
+                    <div class="tableau-slot tableau-slot-4" data-value="empty"></div>
+                    <div class="tableau-slot tableau-slot-5" data-value="empty"></div>
+                    <div class="tableau-slot tableau-slot-6" data-value="empty"></div>
+                    <div class="tableau-slot tableau-slot-7" data-value="empty"></div>
+                </div>
+                <div class="full-deck"></div>
+            </div>
+        </main>
+    </body>
+</html>

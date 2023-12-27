@@ -1,0 +1,119 @@
+html,
+body {
+    font-family: sans-serif;
+    overflow: hidden;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none; 
+}
+
+.card {
+    position: absolute;
+    cursor: pointer;
+    top: 10px;
+}
+
+.card img {
+    width: 100px;
+    height: 140px;
+    border-radius: 5px;
+    border: 2px solid rgb(0, 0, 0);
+}
+
+.card img:hover {
+    border-color: rgb(255, 136, 0);
+}
+
+.solitaire-container {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    overflow: 0;
+    flex-direction: column;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+}
+
+.foundations {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+}
+
+.foundation-slot {
+    border: 2px solid gray;
+    width: 100px;
+    height: 140px;
+    border-radius: 5px;
+    min-width: 100px;
+    display: flex;
+    justify-content: center;
+}
+
+.reserve {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    margin-left: auto;
+}
+
+.reserve-current {
+    border: 2px solid gray;
+    width: 100px;
+    height: 140px;
+    border-radius: 5px;
+    justify-content: center;
+    display: flex;
+}
+
+.reserve-stock {
+    width: 100px;
+    height: 140px;
+    border: 2px solid gray;
+    border-radius: 5px;
+    justify-content: center;
+    display: flex;
+}
+
+.tableau {
+    width: 100%;
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.tableau-slot {
+    width: 100px;
+    min-width: 100px;
+    position: relative;
+    display: flex;
+    border: 2px solid gray;
+    border-radius: 5px;
+    height: 140px;
+    justify-content: center;
+}
+
+.tableau-slot .card {
+    top: -1px;
+}
+
+.full-deck {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+}
+
+.hidden {
+    display: none;
+}
