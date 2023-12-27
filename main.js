@@ -1,6 +1,6 @@
 "use strict";
 const suits = ['spades', 'hearts', 'diamonds', 'clubs'];
-const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace'];
+const values = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king'];
 
 let deck = [];
 
@@ -115,25 +115,21 @@ function canStackOnCard(card, targetCard) {
     const cardValue = card.dataset.value;
     const targetCardValue = targetCard.dataset.value;
 
-    // Special case for Ace stacking on King and vice versa
-    if ((cardValue === 'ace' && targetCardValue === 'king') || (cardValue === 'king' && targetCardValue === 'ace')) {
+    //case queen on king
+    if (cardValue === 'queen' && targetCardValue === 'king') {
         return card.dataset.color !== targetCard.dataset.color;
     }
 
-    // Special case for Queen stacking on King and vice versa
-    if ((cardValue === 'queen' && targetCardValue === 'king') || (cardValue === 'king' && targetCardValue === 'queen')) {
-        return card.dataset.color !== targetCard.dataset.color;
-    }
-
-    // Normal stacking for other cards except Ace stacking on Two
+    //stacking for all number cards
     const cardNumericValue = values.indexOf(cardValue);
     const targetCardNumericValue = values.indexOf(targetCardValue);
 
-    // Check if it's Ace stacking on the bottom of Two
+    //case for ace stacking on 2
     if (cardValue === 'ace' && targetCardValue === '2') {
         return card.dataset.color !== targetCard.dataset.color;
     }
 
+    //case for king stacking on empty slot
     if (cardValue === 'king' && targetCardValue === 'empty') {
         return true;
     }
@@ -144,19 +140,48 @@ function canStackOnCard(card, targetCard) {
     );
 }
 
-//for card drag
-let currentDragCard;
-let isDragging = false;
-let initialCardTransform;
-let initialX;
-let initialY;
-let xOffset = 0;
-let yOffset = 0;
-let elementUnderDrag;
-let ogZindex;
-//for card drag
+function logBoard() {
+    console.log('tableau:', tableau);
+    console.log('reserveStock:', reserveStock);
+    console.log('reserveCurrent:', reserveCurrent);
+    console.log('foundation1:', foundationSlot1);
+    console.log('foundation2:', foundationSlot2);
+    console.log('foundation3:', foundationSlot3);
+    console.log('foundation4:', foundationSlot4);
+}
+
+function findBoardLocation(card) {
+    const foundationSlots = [foundationSlot1, foundationSlot2, foundationSlot3, foundationSlot4];
+    const reserveArrays = [reserveStock, reserveCurrent];
+
+    if (foundationSlots.some(slot => slot.includes(card))) {
+        return foundationSlots.find(slot => slot.includes(card));
+    } else if (reserveArrays.some(array => array.includes(card))) {
+        return reserveArrays.find(array => array.includes(card));
+    } else {
+        for (const key in tableau) {
+            if (tableau[key].includes(card)) {
+                return tableau[key];
+            }
+        }
+    }
+
+    return null; // Card not found in any array
+}
+
 
 function refreshCards() {
+    console.log('refreshing cards...')
+    for (let i = 1; i <= 7; i++) {
+        const tableauSlot = document.querySelector(`.tableau-slot-${i}`);
+        tableau[i - 1] = [...tableauSlot.children];
+
+        // Set dataset.side = 'front' for the last child element
+        const lastChild = tableauSlot.lastElementChild;
+        if (lastChild) {
+            lastChild.dataset.side = 'front';
+        }
+    }
     document.querySelectorAll('.card').forEach(card => {
         if(card.dataset.side === 'front') {
             card.firstElementChild.classList.remove('hidden');
@@ -167,24 +192,7 @@ function refreshCards() {
             card.lastElementChild.classList.remove('hidden');
         }
         if(card.dataset.side === 'front') {
-            card.addEventListener('mousedown', (event) => {
-                event.preventDefault();
-                if(elementUnderDrag == undefined) {
-                    elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
-                }
-                if (event.button === 0 && event.target.parentNode.dataset.side === 'front') {
-                    console.log('down');
-                    currentDragCard = event.target.parentNode;
-                    xOffset = 0;
-                    yOffset = 0;
-                    initialCardTransform = currentDragCard.style.transform;
-                    ogZindex = currentDragCard.style.zIndex;
-                    //currentDragCard.style.zIndex = 9999;
-                    initialX = event.clientX - xOffset;
-                    initialY = event.clientY - yOffset;
-                    isDragging = true;
-                }
-            });            
+            card.addEventListener('mousedown', handleDragStart);            
         }
         const isChildOfFoundationSlot = Array.from(document.querySelectorAll('.foundation-slot')).some(slot => {
             return card.classList.contains('foundation-slot') && card.parentElement.closest(`.${slot.classList[1]}`) !== null;
@@ -193,9 +201,11 @@ function refreshCards() {
         if (!isChildOfFoundationSlot) {
             card.classList.remove('foundation-slot');
         } 
-    });
-    //console.log('tableau:', tableau);
-    //console.log('reserve:', reserveStock);
+    });     
+    foundationSlot1 = [...document.querySelector('.foundation-slot-1').children];
+    foundationSlot2 = [...document.querySelector('.foundation-slot-2').children];
+    foundationSlot3 = [...document.querySelector('.foundation-slot-3').children];
+    foundationSlot4 = [...document.querySelector('.foundation-slot-4').children];
     document.querySelectorAll('.reserve-card').forEach(card => {
         card.addEventListener('click', reserveStockClickHandler);
     });
@@ -220,10 +230,6 @@ function isValidFoundationMove(card, foundationSlot) {
         const topCardValue = topCard.dataset.value;
         const topCardSuit = topCard.dataset.suit;
 
-        // Map card values to an index for comparison
-        const values = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king'];
-
-        // Check if the card suit matches the top card suit and the card value is the next in sequence
         return (
             cardSuit === topCardSuit &&
             values.indexOf(cardValue) === values.indexOf(topCardValue) + 1
@@ -231,48 +237,84 @@ function isValidFoundationMove(card, foundationSlot) {
     }
 }
 
-function getValueIndex(value) {
-    const values = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king'];
-    return values.indexOf(value);
+//for card drag
+let currentDragCard;
+let isDragging = false;
+let initialCardTransform;
+let initialX;
+let initialY;
+let xOffset = 0;
+let yOffset = 0;
+let elementUnderDrag;
+
+let payload = {
+    card: undefined,
+    stack: undefined, //all the cards in the payload
+    initialTransform: undefined,
+    initialBoardLocation: undefined,
+}
+//for card drag
+
+function handleDragStart(event) {
+    event.preventDefault();
+    if(elementUnderDrag == undefined) {
+        elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
+    }
+    if (event.button === 0 && event.target.parentNode.dataset.side === 'front') {
+        payload.card = event.target.parentNode;
+        payload.initialBoardLocation = findBoardLocation(payload.card);
+        const index = payload.initialBoardLocation.indexOf(payload.card);
+
+        if (index !== -1) {
+            payload.stack = payload.initialBoardLocation.slice(index);
+        }
+        xOffset = 0;
+        yOffset = 0;
+        payload.initialTransform = payload.card.style.transform;
+        initialX = event.clientX - xOffset;
+        initialY = event.clientY - yOffset;
+        isDragging = true;
+        console.log(payload.initialBoardLocation)
+        console.log("payload:", payload.stack);
+    }
 }
 
-document.addEventListener('mouseup', handleMouseUp);
+document.addEventListener('mouseup', handleDrop);
 
-function handleMouseUp(event) {
+function handleDrop(event) {
     event.preventDefault();
 
-    if (currentDragCard) {
-        console.log('up');
+    if (payload.card) {
         if (elementUnderDrag && elementUnderDrag.classList.contains('foundation-slot')) {
-            if(isValidFoundationMove(currentDragCard, elementUnderDrag)) {
-                currentDragCard.style.top = '10px';
-                currentDragCard.style.transform = null;
-                currentDragCard.classList.add('foundation-slot');
+            if(isValidFoundationMove(payload.card, elementUnderDrag)) {
+                payload.card.style.top = '10px';
+                payload.card.style.transform = null;
+                payload.card.classList.add('foundation-slot');
                 if(!elementUnderDrag.classList.contains('card')) {
-                    elementUnderDrag.appendChild(currentDragCard);
+                    elementUnderDrag.appendChild(payload.card);
                 }
                 else {
-                    elementUnderDrag.parentElement.appendChild(currentDragCard);
+                    elementUnderDrag.parentElement.appendChild(payload.card);
                 }
 
                 for (let key in tableau) {
                     if (tableau.hasOwnProperty(key)) {
                         const col = tableau[key];
-                        if (col.includes(currentDragCard)) {
-                            col.splice(col.indexOf(currentDragCard), 1);
+                        if (col.includes(payload.card)) {
+                            col.splice(col.indexOf(payload.card), 1);
                             if (col.at(-1)) {
                                 col.at(-1).dataset.side = 'front';
                             }
                         }
                     }
                 }
-                if (reserveCurrent.includes(currentDragCard)) {
+                if (reserveCurrent.includes(payload.card)) {
                     reserveCurrent.pop();
-                    currentDragCard.classList.remove('reserve-current-card');
+                    payload.card.classList.remove('reserve-current-card');
                 }
             }
             else {
-                currentDragCard.style.transform = initialCardTransform;
+                payload.card.style.transform = payload.initialTransform;
                 console.log('Not a valid foundation move.');
             }
             refreshCards();
@@ -290,17 +332,17 @@ function handleMouseUp(event) {
 
                 if (columnIndex !== -1) {
                     const targetPile = document.querySelector(`.tableau-slot.tableau-slot-${columnIndex + 1}`);
-                    const canStack = canStackOnCard(currentDragCard, elementUnderDrag);
-
-                    if (canStack /* && elementUnderDrag.dataset.side === 'front' */) {
-                        const currentColumnIndex = Object.values(tableau).findIndex(pile => pile.includes(currentDragCard));
+                    const canStack = canStackOnCard(payload.card, elementUnderDrag);
+                    console.log(payload.card)
+                    if (canStack) {
+                        const currentColumnIndex = Object.values(tableau).findIndex(pile => pile.includes(payload.card));
 
                         if (currentColumnIndex !== -1) {
                             if (reserveCurrent.includes(elementUnderDrag)) {
                                 reserveCurrent.splice(reserveCurrent.indexOf(elementUnderDrag), 1);
                             }
 
-                            tableau[currentColumnIndex].splice(tableau[currentColumnIndex].indexOf(currentDragCard), 1);
+                            tableau[currentColumnIndex].splice(tableau[currentColumnIndex].indexOf(payload.stack), 1);
 
                             const oldColumn = tableau[currentColumnIndex];
                             const newLastCardIndex = oldColumn.length - 1;
@@ -310,87 +352,112 @@ function handleMouseUp(event) {
                         }
 
                         if (targetPile.children.length === 0) {
-                            if (currentDragCard.dataset.value === 'king') {
-                                targetPile.appendChild(currentDragCard);
-                                currentDragCard.style.transform = null;
-                                currentDragCard.style.top = '-1px';
+                            if (payload.card.dataset.value === 'king') {
+                                //targetPile.appendChild(payload.card);
+                                if(payload.card.classList.contains('reserve-current-card')) {
+                                    targetPile.appendChild(payload.card);
+                                }
+                                else {
+                                    payload.stack.forEach(card => {
+                                        card.style.top = "-1px";
+                                        const lastChild = targetPile.children[targetPile.children.length - 1];
+                                        const topValue = parseInt(lastChild ? lastChild.style.top || 0 : 0);
+                                        //card.style.top = `${topValue + 20}px`; // FIX THIS FIRST NOW
+                                        if(payload.stack.indexOf(card) != 0) {
+                                            card.style.top = `${topValue + 20}px`;
+                                        }
+                                        targetPile.appendChild(card);
+                                    });
+                                }
+                                payload.card.style.transform = null;
+                                payload.card.style.top = '-1px';
 
                                 const targetColumnIndex = columnIndex;
-                                tableau[targetColumnIndex].push(currentDragCard);
+                                tableau[targetColumnIndex].push(payload.card);
 
-                                if (reserveCurrent.includes(currentDragCard)) {
+                                if (reserveCurrent.includes(payload.card)) {
                                     reserveCurrent.pop();
-                                    currentDragCard.classList.remove('reserve-current-card');
+                                    payload.card.classList.remove('reserve-current-card');
                                 }
                                 refreshCards();
                             } 
                             else {
-                                currentDragCard.style.transform = initialCardTransform;
+                                payload.card.style.transform = payload.initialTransform;
                                 console.log('Only a King can be placed in an empty tableau slot.');
                             }
                         } 
                         else {
-                            targetPile.appendChild(currentDragCard);
-                            currentDragCard.style.transform = null;
+                            if(payload.card.classList.contains('reserve-current-card')) {
+                                targetPile.appendChild(payload.card);
+                            }
+                            else {
+                                payload.stack.forEach(card => {
+                                    const lastChild = targetPile.children[targetPile.children.length - 1];
+                                    const topValue = parseInt(lastChild ? lastChild.style.top || 0 : 0);
+                                    card.style.top = `${topValue + 20}px`;
+                                    targetPile.appendChild(card);
+                                });                                
+                            }
+                            payload.card.style.transform = null;
                             if (elementUnderDrag.style.top === '') {
-                                currentDragCard.style.top = `${20}px`;
+                                payload.card.style.top = `${20}px`;
                             } 
                             else {
-                                currentDragCard.style.top = `${parseInt(elementUnderDrag.style.top) + 20}px`;
+                                payload.card.style.top = `${parseInt(elementUnderDrag.style.top) + 20}px`;
                             }
 
                             const targetColumnIndex = parseInt(targetPile.classList[1].split('-')[2]) - 1;
-                            tableau[targetColumnIndex].splice(tableau[targetColumnIndex].indexOf(elementUnderDrag) + 1, 0, currentDragCard);
+                            tableau[targetColumnIndex].splice(tableau[targetColumnIndex].indexOf(elementUnderDrag) + 1, 0, payload.card);
 
-                            if (reserveCurrent.includes(currentDragCard)) {
+                            if (reserveCurrent.includes(payload.card)) {
                                 reserveCurrent.pop();
-                                currentDragCard.classList.remove('reserve-current-card');
+                                payload.card.classList.remove('reserve-current-card');
                             }
                             refreshCards();
                         }
                     } 
                     else {
-                        currentDragCard.style.transform = initialCardTransform;
+                        payload.card.style.transform = payload.initialTransform;
                         console.log('Card cannot stack on this card.');
                     }
                 } 
                 else {
                     console.log(elementUnderDrag)
-                    currentDragCard.style.transform = initialCardTransform;
+                    payload.card.style.transform = payload.initialTransform;
                     console.log('Column index not found.');
                 }
             } 
             else {
-                currentDragCard.style.transform = initialCardTransform;
+                payload.card.style.transform = payload.initialTransform;
                 console.log('Cannot stack on a back face card.');
             }
         } 
         else {
             console.log('Element does not exist or is not a card.');
-            currentDragCard.style.transform = initialCardTransform;
+            payload.card.style.transform = payload.initialTransform;
         }
 
         elementUnderDrag = undefined;
-        currentDragCard = undefined;
+        payload.card = undefined;
         isDragging = false;
     }
 }
 
 document.addEventListener('mousemove', throttle((event) => {
-    if (currentDragCard !== undefined && isDragging) {
+    if (payload.card !== undefined && isDragging) {
         xOffset = event.clientX - initialX;
         yOffset = event.clientY - initialY;
 
         const roundedX = Math.round(xOffset);
         const roundedY = Math.round(yOffset);
 
-        currentDragCard.style.transform = `translate(${roundedX}px, ${roundedY}px)`;
+        payload.card.style.transform = `translate(${roundedX}px, ${roundedY}px)`;
 
-        currentDragCard.style.display = 'none';
+        payload.card.style.display = 'none';
 
         elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
 
-        currentDragCard.style.display = '';
+        payload.card.style.display = '';
 
         if (elementUnderDrag.classList.contains('ignore-element')) {
             let parent = elementUnderDrag.parentElement;
@@ -423,10 +490,6 @@ function reserveStockClickHandler(event) {
         reserveCurrent.push(card);
         reserveStock.splice(card, 1);
         card.removeEventListener('click', reserveStockClickHandler);
-        console.clear();
-        console.log('tableau:', tableau);
-        console.log('reserve:', reserveStock);
-        console.log('current:', reserveCurrent);
         refreshCards();
     }
 }
@@ -436,8 +499,8 @@ window.onload = () => {
     showFullDeck();
     dealDeck();
     refreshCards();
-    console.log('tableau:', tableau);
-    console.log('reserve:', reserveStock);
+    //console.log('tableau:', tableau);
+    //console.log('reserve:', reserveStock);
     showFullDeck();
     document.querySelectorAll('.reserve-card').forEach(card => {
         card.addEventListener('click', reserveStockClickHandler);

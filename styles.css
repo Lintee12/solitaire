@@ -57,6 +57,10 @@ body {
     justify-content: center;
 }
 
+.foundation-slot .card {
+    border: 0 !important;
+}
+
 .reserve {
     display: flex;
     gap: 10px;
