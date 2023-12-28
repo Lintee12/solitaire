@@ -310,6 +310,7 @@ function handleDragStart(event) {
     }
 }
 
+document.addEventListener('touchend', handleDrop);
 document.addEventListener('mouseup', handleDrop);
 
 function handleDrop(event) {
@@ -489,7 +490,10 @@ function handleDrop(event) {
     }
 }
 
-document.addEventListener('mousemove', throttle((event) => {
+document.addEventListener('touchmove', throttle(handleDrag, 24));
+document.addEventListener('mousemove', throttle(handleDrag, 24));
+
+function handleDrag(event) {
     if (payload.card !== undefined && isDragging) {
         xOffset = event.clientX - initialX;
         yOffset = event.clientY - initialY;
@@ -515,7 +519,7 @@ document.addEventListener('mousemove', throttle((event) => {
             }
         }
     }
-}, 24));
+}
 
 function reserveStockClickHandler(event) {
     const card = event.currentTarget;
