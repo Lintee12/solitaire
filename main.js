@@ -257,25 +257,32 @@ let payload = {
 
 function handleDragStart(event) {
     event.preventDefault();
-    if(elementUnderDrag == undefined) {
+    if (elementUnderDrag === undefined) {
         elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
     }
     if (event.button === 0 && event.target.parentNode.dataset.side === 'front') {
         payload.card = event.target.parentNode;
         payload.initialBoardLocation = findBoardLocation(payload.card);
-        const index = payload.initialBoardLocation.indexOf(payload.card);
 
-        if (index !== -1) {
-            payload.stack = payload.initialBoardLocation.slice(index);
+        // Check if the card comes from reserveCurrent
+        if (reserveCurrent.includes(payload.card)) {
+            payload.stack = [payload.card]; // Set the payload stack to the single card being dragged
+        } 
+        else {
+            const index = payload.initialBoardLocation.indexOf(payload.card);
+            if (index !== -1) {
+                payload.stack = payload.initialBoardLocation.slice(index);
+            }
         }
+
         xOffset = 0;
         yOffset = 0;
         payload.initialTransform = payload.card.style.transform;
         initialX = event.clientX - xOffset;
         initialY = event.clientY - yOffset;
         isDragging = true;
-        console.log(payload.initialBoardLocation)
-        console.log("payload:", payload.stack);
+        console.log(payload.initialBoardLocation);
+        console.log('payload:', payload.stack);
     }
 }
 
@@ -326,7 +333,8 @@ function handleDrop(event) {
                 if (elementUnderDrag.classList.contains('tableau-slot')) {
                     console.log(elementUnderDrag);
                     columnIndex = parseInt(elementUnderDrag.classList[1].split('-')[2]) - 1;
-                } else {
+                } 
+                else {
                     columnIndex = Object.values(tableau).findIndex(pile => pile.includes(elementUnderDrag));
                 }
 
@@ -334,12 +342,18 @@ function handleDrop(event) {
                     const targetPile = document.querySelector(`.tableau-slot.tableau-slot-${columnIndex + 1}`);
                     const canStack = canStackOnCard(payload.card, elementUnderDrag);
                     console.log(payload.card)
-                    if (canStack) {
+                    if (canStack) { //if card can stack on the tableau
                         const currentColumnIndex = Object.values(tableau).findIndex(pile => pile.includes(payload.card));
-
+                        if (reserveCurrent.includes(payload.card)) {
+                            reserveCurrent.pop();
+                            payload.card.classList.remove('reserve-current-card');
+                        }
                         if (currentColumnIndex !== -1) {
                             if (reserveCurrent.includes(elementUnderDrag)) {
                                 reserveCurrent.splice(reserveCurrent.indexOf(elementUnderDrag), 1);
+                            }
+                            if (reserveCurrent.includes(payload.card)) {
+                                reserveCurrent.splice(reserveCurrent.indexOf(payload.card), 1); // Remove the card from reserveCurrent
                             }
 
                             tableau[currentColumnIndex].splice(tableau[currentColumnIndex].indexOf(payload.stack), 1);
@@ -388,15 +402,17 @@ function handleDrop(event) {
                         } 
                         else {
                             if(payload.card.classList.contains('reserve-current-card')) {
-                                targetPile.appendChild(payload.card);
+                                targetPile.appendChild(payload.card); //only place one card if its from the reserve
                             }
                             else {
                                 payload.stack.forEach(card => {
-                                    const lastChild = targetPile.children[targetPile.children.length - 1];
-                                    const topValue = parseInt(lastChild ? lastChild.style.top || 0 : 0);
-                                    card.style.top = `${topValue + 20}px`;
-                                    targetPile.appendChild(card);
-                                });                                
+                                    if (!reserveCurrent.includes(card)) {
+                                        const lastChild = targetPile.children[targetPile.children.length - 1];
+                                        const topValue = parseInt(lastChild ? lastChild.style.top || 0 : 0);
+                                        card.style.top = `${topValue + 20}px`;
+                                        targetPile.appendChild(card);
+                                    }
+                                });                                                             
                             }
                             payload.card.style.transform = null;
                             if (elementUnderDrag.style.top === '') {
@@ -436,7 +452,8 @@ function handleDrop(event) {
             console.log('Element does not exist or is not a card.');
             payload.card.style.transform = payload.initialTransform;
         }
-
+        payload.initialBoardLocation = undefined;
+        payload.stack = undefined;
         elementUnderDrag = undefined;
         payload.card = undefined;
         isDragging = false;
