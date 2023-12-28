@@ -44,7 +44,7 @@ body {
     position: absolute;
     cursor: pointer;
     top: 49px;
-    touch-action: none;
+    transform: translateZ(0);
 }
 
 .card img {

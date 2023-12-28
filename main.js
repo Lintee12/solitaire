@@ -272,6 +272,7 @@ let initialY;
 let xOffset = 0;
 let yOffset = 0;
 let elementUnderDrag;
+let originalZIndex;
 
 let payload = {
     card: undefined,
@@ -294,6 +295,7 @@ function handleDragStart(event) {
     }
     if (event.button === 0 && event.target.parentNode.dataset.side === 'front') {
         payload.card = event.target.parentNode;
+        originalZIndex = window.getComputedStyle(payload.card).zIndex;
         payload.initialBoardLocation = findBoardLocation(payload.card);
         //check if the cards are valid to drag and add them to the stack
         if (reserveCurrent.includes(payload.card)) {
@@ -322,8 +324,23 @@ document.addEventListener('mouseup', handleDrop, false);
 
 function handleDrop(event) {
     event.preventDefault();
-
     if (payload.card) {
+
+        payload.card.style.display = 'none';
+
+        elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY); 
+
+        payload.card.style.display = '';
+        //find the element that we are trying to drop on
+        if (elementUnderDrag.classList.contains('ignore-element')) {
+            let parent = elementUnderDrag.parentElement;
+
+            if (parent) {
+                elementUnderDrag = parent;
+            }
+        }
+        payload.card.style.zIndex = originalZIndex;
+        
         if (elementUnderDrag && elementUnderDrag.classList.contains('foundation-slot')) {
             if(isValidFoundationMove(payload.card, elementUnderDrag)) {
                 payload.card.style.top = '49px';
@@ -497,11 +514,14 @@ function handleDrop(event) {
     }
 }
 
-document.addEventListener('touchmove', throttle(handleDrag, 24), false);
-document.addEventListener('mousemove', throttle(handleDrag, 24), false);
+document.addEventListener('touchmove', throttle(handleDrag, 8), false);
+document.addEventListener('mousemove', throttle(handleDrag, 8), false);
+
 
 function handleDrag(event) {
-    if (payload.card !== undefined && isDragging) {
+  if (isDragging) {
+    requestAnimationFrame(() => {
+      if (payload.card) {
         xOffset = event.clientX - initialX;
         yOffset = event.clientY - initialY;
 
@@ -509,23 +529,12 @@ function handleDrag(event) {
         const roundedY = Math.round(yOffset);
 
         payload.card.style.transform = `translate(${roundedX}px, ${roundedY}px)`;
-
-        payload.card.style.display = 'none';
-
-        //determine what card we are hovvering over
-        elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY); 
-        //change to on drop to fix performance issues
-
-        payload.card.style.display = '';
-
-        if (elementUnderDrag.classList.contains('ignore-element')) {
-            let parent = elementUnderDrag.parentElement;
-
-            if (parent) {
-                elementUnderDrag = parent;
-            }
-        }
-    }
+        
+        // Ensure the dragged element is visually on top while dragging
+        payload.card.style.zIndex = '9999'; // Set a high z-index value
+      }
+    });
+  }
 }
 
 function reserveStockClickHandler(event) {
