@@ -209,8 +209,8 @@ function refreshCards() {
             card.lastElementChild.classList.remove('hidden');
         }
         if(card.dataset.side === 'front') {
-            card.addEventListener('touchstart', handleDragStart);      
-            card.addEventListener('mousedown', handleDragStart);            
+            card.addEventListener('touchstart', handleDragStart, false);      
+            card.addEventListener('mousedown', handleDragStart, false);            
         }
         const isChildOfFoundationSlot = Array.from(document.querySelectorAll('.foundation-slot')).some(slot => {
             return card.classList.contains('foundation-slot') && card.parentElement.closest(`.${slot.classList[1]}`) !== null;
@@ -282,9 +282,15 @@ let payload = {
 //for card drag
 
 function handleDragStart(event) {
-    event.preventDefault();
+    //event.preventDefault();
     if (elementUnderDrag === undefined) {
-        elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
+        //elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
+        if (event.type === 'touchstart') {
+            console.log('mobile')
+            elementUnderDrag = document.elementFromPoint(event.touches[0].clientX, event.touches[0].clientY);
+        } else {
+            elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
+        }
     }
     if (event.button === 0 && event.target.parentNode.dataset.side === 'front') {
         payload.card = event.target.parentNode;
@@ -311,8 +317,8 @@ function handleDragStart(event) {
     }
 }
 
-document.addEventListener('touchend', handleDrop);
-document.addEventListener('mouseup', handleDrop);
+document.addEventListener('touchend', handleDrop, false);
+document.addEventListener('mouseup', handleDrop, false);
 
 function handleDrop(event) {
     event.preventDefault();
@@ -491,8 +497,8 @@ function handleDrop(event) {
     }
 }
 
-document.addEventListener('touchmove', throttle(handleDrag, 24));
-document.addEventListener('mousemove', throttle(handleDrag, 24));
+document.addEventListener('touchmove', throttle(handleDrag, 24), false);
+document.addEventListener('mousemove', throttle(handleDrag, 24), false);
 
 function handleDrag(event) {
     if (payload.card !== undefined && isDragging) {
