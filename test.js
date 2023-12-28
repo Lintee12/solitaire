@@ -285,7 +285,7 @@ let originalZIndex;
 let payload = {
     card: undefined,
     stack: undefined, //all the cards in the payload
-    initialTransform: undefined,
+    initialTransform: [],
     initialBoardLocation: undefined,
 }
 //for card drag
@@ -318,7 +318,14 @@ function handleDragStart(event) {
 
     xOffset = 0;
     yOffset = 0;
-    payload.initialTransform = window.getComputedStyle(payload.card).transform;
+    if(payload.stack.length > 1) {
+        payload.stack.forEach(card => {
+            payload.initialTransform.push(window.getComputedStyle(card).transform)
+        });
+    }
+    else {
+        payload.initialTransform.push(window.getComputedStyle(payload.card).transform);
+    }
     if(event.type === 'touchstart') {
         initialX = event.touches[0].clientX - xOffset;
         initialY = event.touches[0].clientY - yOffset;
@@ -397,7 +404,10 @@ function handleDrop(event) {
                 }
             }
             else {
-                payload.card.style.transform = payload.initialTransform;
+                //payload.card.style.transform = payload.initialTransform;
+                for (let i = 0; i < payload.stack.length; i++) {
+                    payload.stack[i].style.transform = payload.initialTransform[i];
+                }
                 console.log('Not a valid foundation move.');
             }
             refreshCards();
@@ -459,7 +469,10 @@ function handleDrop(event) {
                                     });
                                     madeMove();
                                 }
-                                payload.card.style.transform = null;
+                                //payload.card.style.transform = null;
+                                payload.stack.forEach(card => {
+                                    card.style.transform = null;
+                                });
                                 payload.card.style.top = '-1px';
 
                                 const targetColumnIndex = columnIndex;
@@ -472,7 +485,10 @@ function handleDrop(event) {
                                 refreshCards();
                             } 
                             else {
-                                payload.card.style.transform = payload.initialTransform;
+                                //payload.card.style.transform = payload.initialTransform;
+                                for (let i = 0; i < payload.stack.length; i++) {
+                                    payload.stack[i].style.transform = payload.initialTransform[i];
+                                }
                                 console.log('Only a King can be placed in an empty tableau slot.');
                             }
                         } 
@@ -492,7 +508,10 @@ function handleDrop(event) {
                                 });     
                                 madeMove();                                                        
                             }
-                            payload.card.style.transform = null;
+                            //payload.card.style.transform = null;
+                            payload.stack.forEach(card => {
+                                card.style.transform = null;
+                            });
                             if (elementUnderDrag.style.top === '') {
                                 payload.card.style.top = `${20}px`;
                             } 
@@ -511,25 +530,38 @@ function handleDrop(event) {
                         }
                     } 
                     else {
-                        payload.card.style.transform = payload.initialTransform;
+                        //payload.card.style.transform = payload.initialTransform;
+                        for (let i = 0; i < payload.stack.length; i++) {
+                            payload.stack[i].style.transform = payload.initialTransform[i];
+                        }
                         console.log('Card cannot stack on this card.');
                     }
                 } 
                 else {
                     console.log(elementUnderDrag)
-                    payload.card.style.transform = payload.initialTransform;
+                    //payload.card.style.transform = payload.initialTransform;
+                    for (let i = 0; i < payload.stack.length; i++) {
+                        payload.stack[i].style.transform = payload.initialTransform[i];
+                    }
                     console.log('Column index not found.');
                 }
             } 
             else {
-                payload.card.style.transform = payload.initialTransform;
+                //payload.card.style.transform = payload.initialTransform;
+                for (let i = 0; i < payload.stack.length; i++) {
+                    payload.stack[i].style.transform = payload.initialTransform[i];
+                }
                 console.log('Cannot stack on a back face card.');
             }
         } 
         else {
             console.log('Element does not exist or is not a card.');
-            payload.card.style.transform = payload.initialTransform;
+            //payload.card.style.transform = payload.initialTransform;
+            for (let i = 0; i < payload.stack.length; i++) {
+                payload.stack[i].style.transform = payload.initialTransform[i];
+            }
         }
+        payload.initialTransform = []
         payload.initialBoardLocation = undefined;
         payload.stack = undefined;
         elementUnderDrag = undefined;
@@ -561,10 +593,29 @@ function handleDrag(event) {
         
                 const roundedX = Math.round(xOffset);
                 const roundedY = Math.round(yOffset);
-        
-                payload.card.style.transform = `translate(${roundedX}px, ${roundedY}px)`;
+
+                if (payload.stack.length > 0) {
+                    payload.stack.forEach(card => {
+                        let currentTransform = card.style.transform;
                 
-                payload.card.style.zIndex = '9999'; //place card on top of everything
+                        let match = currentTransform.match(/translate\((-?\d+\.?\d*|\.\d+), (-?\d+\.?\d*|\.\d+)\)/);
+                
+                        let currentX = match ? parseFloat(match[1]) : 0;
+                        let currentY = match ? parseFloat(match[2]) : 0;
+                
+                        let newX = currentX + roundedX;
+                        let newY = currentY + roundedY;
+                
+                        card.style.transform = `translate(${newX}px, ${newY}px)`;
+                        card.style.zIndex = '9999'
+                    });
+                }                               
+                else {
+                    payload.card.style.transform = `translate(${roundedX}px, ${roundedY}px)`;
+                
+                    payload.card.style.zIndex = '9999'; //place card on top of everything
+                }
+    
             }
       });
     }
