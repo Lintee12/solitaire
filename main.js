@@ -75,7 +75,7 @@ function shuffleDeck() { //shuffle the deck
     deck = shuffleArray(deck)
 }
 
-function dealDeck() { // deal cards to the proper place in the decks
+function dealDeck() { //deal cards to the proper place in the decks
     let tableauCardCount = [1, 2, 3, 4, 5, 6, 7];
     let tableauTemp = [[], [], [], [], [], [], []];
 
@@ -168,7 +168,7 @@ function logBoard() {
     console.log('foundation4:', foundationSlot4);
 }
 
-function findBoardLocation(card) { // find the array a card is located in
+function findBoardLocation(card) { //find the array a card is located in
     const foundationSlots = [foundationSlot1, foundationSlot2, foundationSlot3, foundationSlot4];
     const reserveArrays = [reserveStock, reserveCurrent];
 
@@ -284,7 +284,7 @@ let payload = {
 //for card drag
 
 function handleDragStart(event) {
-    event.preventDefault()
+    //event.preventDefault()
   if (elementUnderDrag === undefined) {
     if (event.type === 'touchstart') {
         console.log('mobile touch start')
