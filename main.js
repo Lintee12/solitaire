@@ -209,6 +209,7 @@ function refreshCards() {
             card.lastElementChild.classList.remove('hidden');
         }
         if(card.dataset.side === 'front') {
+            card.addEventListener('touchstart', handleDragStart);      
             card.addEventListener('mousedown', handleDragStart);            
         }
         const isChildOfFoundationSlot = Array.from(document.querySelectorAll('.foundation-slot')).some(slot => {
