@@ -212,6 +212,13 @@ function refreshCards() {
             card.addEventListener('touchstart', handleDragStart, { passive: true });      
             card.addEventListener('mousedown', handleDragStart, false);            
         }
+        if (card.classList.contains('foundation-slot')) {
+            const index = reserveCurrent.indexOf(card);
+            if (index !== -1) {
+                reserveCurrent.splice(index, 1);
+                card.style.transform = window.getComputedStyle(card).transform;
+            }
+        }        
         const isChildOfFoundationSlot = Array.from(document.querySelectorAll('.foundation-slot')).some(slot => {
             return card.classList.contains('foundation-slot') && card.parentElement.closest(`.${slot.classList[1]}`) !== null;
         });
@@ -311,7 +318,7 @@ function handleDragStart(event) {
 
     xOffset = 0;
     yOffset = 0;
-    payload.initialTransform = payload.card.style.transform;
+    payload.initialTransform = window.getComputedStyle(payload.card).transform;
     if(event.type === 'touchstart') {
         initialX = event.touches[0].clientX - xOffset;
         initialY = event.touches[0].clientY - yOffset;
@@ -345,11 +352,13 @@ function handleDrop(event) {
 
         payload.card.style.display = '';
         //find the element that we are trying to drop on
-        if (elementUnderDrag.classList.contains('ignore-element')) {
-            let parent = elementUnderDrag.parentElement;
-
-            if (parent) {
-                elementUnderDrag = parent;
+        if(elementUnderDrag) {
+            if (elementUnderDrag.classList.contains('ignore-element')) {
+                let parent = elementUnderDrag.parentElement;
+    
+                if (parent) {
+                    elementUnderDrag = parent;
+                }
             }
         }
         payload.card.style.zIndex = originalZIndex;
@@ -358,6 +367,9 @@ function handleDrop(event) {
             if(isValidFoundationMove(payload.card, elementUnderDrag)) {
                 payload.card.style.top = '49px';
                 payload.card.style.transform = null;
+                if(payload.card.classList.contains('reserve-current-card')) {
+                    payload.card.style.transform = window.getComputedStyle(payload.card).transform;
+                }
                 payload.card.classList.add('foundation-slot');
                 if(!elementUnderDrag.classList.contains('card')) {
                     elementUnderDrag.appendChild(payload.card);
@@ -440,7 +452,6 @@ function handleDrop(event) {
                                         card.style.top = "-1px";
                                         const lastChild = targetPile.children[targetPile.children.length - 1];
                                         const topValue = parseInt(lastChild ? lastChild.style.top || 0 : 0);
-                                        //card.style.top = `${topValue + 20}px`; // FIX THIS FIRST NOW
                                         if(payload.stack.indexOf(card) != 0) {
                                             card.style.top = `${topValue + 20}px`;
                                         }
