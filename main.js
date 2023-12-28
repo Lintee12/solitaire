@@ -283,40 +283,38 @@ let payload = {
 //for card drag
 
 function handleDragStart(event) {
-    //event.preventDefault();
-    if (elementUnderDrag === undefined) {
-        //elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
-        if (event.type === 'touchstart') {
-            console.log('mobile')
-            elementUnderDrag = document.elementFromPoint(event.touches[0].clientX, event.touches[0].clientY);
-        } else {
-            elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
-        }
+  if (elementUnderDrag === undefined) {
+    if (event.type === 'touchstart') {
+      elementUnderDrag = document.elementFromPoint(event.touches[0].clientX, event.touches[0].clientY);
+    } else {
+      elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
     }
-    if (event.button === 0 && event.target.parentNode.dataset.side === 'front') {
-        payload.card = event.target.parentNode;
-        originalZIndex = window.getComputedStyle(payload.card).zIndex;
-        payload.initialBoardLocation = findBoardLocation(payload.card);
-        //check if the cards are valid to drag and add them to the stack
-        if (reserveCurrent.includes(payload.card)) {
-            payload.stack = [payload.card];
-        } 
-        else {
-            const index = payload.initialBoardLocation.indexOf(payload.card);
-            if (index !== -1) {
-                payload.stack = payload.initialBoardLocation.slice(index);
-            }
-        }
+  }
+  
+  if (event.button === 0 && event.target.parentNode.dataset.side === 'front') {
+    payload.card = event.target.parentNode;
+    originalZIndex = window.getComputedStyle(payload.card).zIndex;
+    payload.initialBoardLocation = findBoardLocation(payload.card);
 
-        xOffset = 0;
-        yOffset = 0;
-        payload.initialTransform = payload.card.style.transform;
-        initialX = event.clientX - xOffset;
-        initialY = event.clientY - yOffset;
-        isDragging = true;
-        console.log(payload.initialBoardLocation);
-        console.log('payload:', payload.stack);
+    //check if the cards are valid to drag and add them to the stack
+    if (reserveCurrent.includes(payload.card)) {
+      payload.stack = [payload.card];
+    } else {
+      const index = payload.initialBoardLocation.indexOf(payload.card);
+      if (index !== -1) {
+        payload.stack = payload.initialBoardLocation.slice(index);
+      }
     }
+
+    xOffset = 0;
+    yOffset = 0;
+    payload.initialTransform = payload.card.style.transform;
+    initialX = event.clientX - xOffset;
+    initialY = event.clientY - yOffset;
+    isDragging = true;
+    console.log(payload.initialBoardLocation);
+    console.log('payload:', payload.stack);
+  }
 }
 
 document.addEventListener('touchend', handleDrop, false);
@@ -340,7 +338,7 @@ function handleDrop(event) {
             }
         }
         payload.card.style.zIndex = originalZIndex;
-        
+
         if (elementUnderDrag && elementUnderDrag.classList.contains('foundation-slot')) {
             if(isValidFoundationMove(payload.card, elementUnderDrag)) {
                 payload.card.style.top = '49px';
@@ -517,24 +515,31 @@ function handleDrop(event) {
 document.addEventListener('touchmove', throttle(handleDrag, 8), false);
 document.addEventListener('mousemove', throttle(handleDrag, 8), false);
 
-
 function handleDrag(event) {
-  if (isDragging) {
-    requestAnimationFrame(() => {
-      if (payload.card) {
-        xOffset = event.clientX - initialX;
-        yOffset = event.clientY - initialY;
-
-        const roundedX = Math.round(xOffset);
-        const roundedY = Math.round(yOffset);
-
-        payload.card.style.transform = `translate(${roundedX}px, ${roundedY}px)`;
-        
-        // Ensure the dragged element is visually on top while dragging
-        payload.card.style.zIndex = '9999'; // Set a high z-index value
-      }
-    });
-  }
+    if (isDragging) {
+      requestAnimationFrame(() => {
+        if (payload.card) {
+          let clientX, clientY;
+          if (event.type === 'touchmove') {
+            clientX = event.touches[0].clientX;
+            clientY = event.touches[0].clientY;
+          } else {
+            clientX = event.clientX;
+            clientY = event.clientY;
+          }
+  
+          xOffset = clientX - initialX;
+          yOffset = clientY - initialY;
+  
+          const roundedX = Math.round(xOffset);
+          const roundedY = Math.round(yOffset);
+  
+          payload.card.style.transform = `translate(${roundedX}px, ${roundedY}px)`;
+          
+          payload.card.style.zIndex = '9999'; //place card on top of everything
+        }
+      });
+    }
 }
 
 function reserveStockClickHandler(event) {
