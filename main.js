@@ -226,6 +226,7 @@ function refreshCards() {
     foundationSlot4 = [...document.querySelector('.foundation-slot-4').children];
     document.querySelectorAll('.reserve-card').forEach(card => {
         card.addEventListener('click', reserveStockClickHandler);
+        card.addEventListener('touchend', reserveStockClickHandler);
     });
 }
 
@@ -283,15 +284,17 @@ let payload = {
 //for card drag
 
 function handleDragStart(event) {
+    event.preventDefault()
   if (elementUnderDrag === undefined) {
     if (event.type === 'touchstart') {
+        console.log('mobile touch start')
       elementUnderDrag = document.elementFromPoint(event.touches[0].clientX, event.touches[0].clientY);
     } else {
       elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
     }
   }
   
-  if (event.button === 0 && event.target.parentNode.dataset.side === 'front') {
+  if ((event.button === 0 || event.type === 'touchstart') && event.target.parentNode.dataset.side === 'front') {
     payload.card = event.target.parentNode;
     originalZIndex = window.getComputedStyle(payload.card).zIndex;
     payload.initialBoardLocation = findBoardLocation(payload.card);
@@ -309,8 +312,14 @@ function handleDragStart(event) {
     xOffset = 0;
     yOffset = 0;
     payload.initialTransform = payload.card.style.transform;
-    initialX = event.clientX - xOffset;
-    initialY = event.clientY - yOffset;
+    if(event.type === 'touchstart') {
+        initialX = event.touches[0].clientX - xOffset;
+        initialY = event.touches[0].clientY - yOffset;
+    }
+    else {
+        initialX = event.clientX - xOffset;
+        initialY = event.clientY - yOffset;
+    }
     isDragging = true;
     console.log(payload.initialBoardLocation);
     console.log('payload:', payload.stack);
@@ -326,7 +335,13 @@ function handleDrop(event) {
 
         payload.card.style.display = 'none';
 
-        elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY); 
+        if(event.type === 'touchend') {
+            var touch = event.touches[0] || event.changedTouches[0];
+            elementUnderDrag = document.elementFromPoint(touch.pageX, touch.pageY); 
+        }
+        else {
+            elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY); 
+        }
 
         payload.card.style.display = '';
         //find the element that we are trying to drop on
@@ -516,6 +531,7 @@ document.addEventListener('touchmove', throttle(handleDrag, 8), false);
 document.addEventListener('mousemove', throttle(handleDrag, 8), false);
 
 function handleDrag(event) {
+    event.preventDefault();
     if (isDragging) {
       requestAnimationFrame(() => {
         if (payload.card) {
@@ -523,6 +539,7 @@ function handleDrag(event) {
           if (event.type === 'touchmove') {
             clientX = event.touches[0].clientX;
             clientY = event.touches[0].clientY;
+            console.log('mobile drag');
           } else {
             clientX = event.clientX;
             clientY = event.clientY;
@@ -530,6 +547,7 @@ function handleDrag(event) {
   
           xOffset = clientX - initialX;
           yOffset = clientY - initialY;
+          console.log(xOffset)
   
           const roundedX = Math.round(xOffset);
           const roundedY = Math.round(yOffset);
@@ -556,6 +574,26 @@ function reserveStockClickHandler(event) {
     }
 }
 
+function resetReserve(event) {
+    madeMove(); 
+    if (event.target === document.querySelector('.reserve-stock')) {
+        if(reserveStock.length == 0) {
+            Array.from(document.querySelectorAll('.reserve-current-card')).findLast(element => {
+                element.classList.remove('reserve-current-card');
+                element.classList.add('reserve-card');
+                element.dataset.side = 'back';
+                document.querySelector('.reserve-stock').appendChild(element);
+                element.addEventListener('click', reserveStockClickHandler(event));
+                element.addEventListener('touchend', reserveStockClickHandler(event));
+                reserveStock.push(element);
+                reserveCurrent.splice(element, 1);
+                console.clear();
+                refreshCards();
+            });
+        }
+    }
+}
+
 window.onload = () => { //init the game
     shuffleDeck();
     showFullDeck();
@@ -564,26 +602,8 @@ window.onload = () => { //init the game
     showFullDeck();
     document.querySelectorAll('.reserve-card').forEach(card => {
         card.addEventListener('click', reserveStockClickHandler);
+        card.addEventListener('touchend', reserveStockClickHandler);
     });
-    document.querySelector('.reserve-stock').addEventListener('click', (event) => {
-        madeMove(); 
-        if (event.target === document.querySelector('.reserve-stock')) {
-            if(reserveStock.length == 0) {
-                Array.from(document.querySelectorAll('.reserve-current-card')).findLast(element => {
-                    element.classList.remove('reserve-current-card');
-                    element.classList.add('reserve-card');
-                    element.dataset.side = 'back';
-                    document.querySelector('.reserve-stock').appendChild(element);
-                    element.addEventListener('click', reserveStockClickHandler(event));
-                    reserveStock.push(element);
-                    reserveCurrent.splice(element, 1);
-                    console.clear();
-                    console.log('tableau:', tableau);
-                    console.log('reserve:', reserveStock);
-                    console.log('current:', reserveCurrent);
-                    refreshCards();
-                });
-            }
-        }
-    });
+    document.querySelector('.reserve-stock').addEventListener('click', resetReserve);
+    document.querySelector('.reserve-stock').addEventListener('touchend', resetReserve);
 }
