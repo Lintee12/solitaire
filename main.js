@@ -330,7 +330,7 @@ document.addEventListener('touchend', handleDrop, false);
 document.addEventListener('mouseup', handleDrop, false);
 
 function handleDrop(event) {
-    //event.preventDefault();
+    event.preventDefault();
     if (payload.card) {
 
         payload.card.style.display = 'none';
