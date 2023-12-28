@@ -209,7 +209,7 @@ function refreshCards() {
             card.lastElementChild.classList.remove('hidden');
         }
         if(card.dataset.side === 'front') {
-            card.addEventListener('touchstart', handleDragStart, false);      
+            card.addEventListener('touchstart', handleDragStart, { passive: true });      
             card.addEventListener('mousedown', handleDragStart, false);            
         }
         const isChildOfFoundationSlot = Array.from(document.querySelectorAll('.foundation-slot')).some(slot => {
@@ -330,7 +330,7 @@ document.addEventListener('touchend', handleDrop, false);
 document.addEventListener('mouseup', handleDrop, false);
 
 function handleDrop(event) {
-    event.preventDefault();
+    //event.preventDefault();
     if (payload.card) {
 
         payload.card.style.display = 'none';
@@ -531,7 +531,7 @@ document.addEventListener('touchmove', throttle(handleDrag, 8), false);
 document.addEventListener('mousemove', throttle(handleDrag, 8), false);
 
 function handleDrag(event) {
-    event.preventDefault();
+    //event.preventDefault();
     if (isDragging) {
       requestAnimationFrame(() => {
         if (payload.card) {
