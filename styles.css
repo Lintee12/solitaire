@@ -11,10 +11,39 @@ body {
     user-select: none; 
 }
 
+.top-nav {
+    background-color: #333; /* Background color */
+    color: #fff; /* Text color */
+    padding: 10px 0; /* Padding for top and bottom */
+}
+
+.top-nav nav {
+    text-align: center;
+}
+
+.top-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+.move-count {
+    margin-right: 10px;
+}
+
+.move-count::before {
+    content: "Moves: ";
+}
+
+.right {
+    margin-left: auto;
+}
+
 .card {
     position: absolute;
     cursor: pointer;
-    top: 10px;
+    top: 49px;
 }
 
 .card img {

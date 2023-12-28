@@ -14,7 +14,14 @@ let reserveCurrent = [];
 
 let tableau = {1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: []};
 
-function createCard(name, side) {
+let moveCounter = 0;
+
+const madeMove = () => { //function to update the movements the user has made
+    moveCounter++;
+    document.querySelector('.move-count').innerHTML = moveCounter;
+}
+
+function createCard(name, side) { //function to creaate a card element
     let div = document.createElement('div');
     let front = document.createElement('img');
     let back = document.createElement('img');
@@ -57,7 +64,7 @@ function shuffleArray(array) { //Fisher-Yates shuffle alogrithm
     return array;
 }
 
-function shuffleDeck() {
+function shuffleDeck() { //shuffle the deck
     deck = [];
     for (let i = 0; i < suits.length; i++) {
         for (let j = 0; j < values.length; j++) {
@@ -68,16 +75,7 @@ function shuffleDeck() {
     deck = shuffleArray(deck)
 }
 
-function addCardToTableau(element, tableauSlotIndex) {
-    const tableauSlot = document.querySelector(`.tableau-slot-${tableauSlotIndex}`);
-    if (tableauSlot.childElementCount > 0) {
-        const topPosition = tableauSlot.lastElementChild.offsetTop + 20;
-        element.style.top = `${topPosition}px`;
-      }
-    tableauSlot.appendChild(element);
-}
-
-function dealDeck() {
+function dealDeck() { // deal cards to the proper place in the decks
     let tableauCardCount = [1, 2, 3, 4, 5, 6, 7];
     let tableauTemp = [[], [], [], [], [], [], []];
 
@@ -101,7 +99,7 @@ function dealDeck() {
     deck = [];
 }
 
-function showFullDeck() {
+function showFullDeck() { //dev function to show all the cards in the deck
     document.querySelector('.full-deck').innerHTML = '';
     deck.forEach(card => {
         let container = document.createElement('div');
@@ -111,9 +109,34 @@ function showFullDeck() {
     });
 }
 
-function canStackOnCard(card, targetCard) {
+function addCardToTableau(element, tableauSlotIndex) { //adding a card to a tableau slot
+    const tableauSlot = document.querySelector(`.tableau-slot-${tableauSlotIndex}`);
+    if (tableauSlot.childElementCount > 0) {
+        const topPosition = tableauSlot.lastElementChild.offsetTop + 20;
+        element.style.top = `${topPosition}px`;
+      }
+    tableauSlot.appendChild(element);
+}
+
+function canStackOnCard(card, targetCard) { //see if cards can stack
     const cardValue = card.dataset.value;
     const targetCardValue = targetCard.dataset.value;
+
+    //case for king stacking on empty slot
+    if (cardValue === 'king' && targetCardValue === 'empty') {
+        if(targetCard.children.length > 0) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    //make sure you cant stack on a card that has a card stacked on it
+    const isLastChild = targetCard === targetCard.parentElement.lastElementChild;
+    if(isLastChild === false) {
+        return false;
+    }
 
     //case queen on king
     if (cardValue === 'queen' && targetCardValue === 'king') {
@@ -127,11 +150,6 @@ function canStackOnCard(card, targetCard) {
     //case for ace stacking on 2
     if (cardValue === 'ace' && targetCardValue === '2') {
         return card.dataset.color !== targetCard.dataset.color;
-    }
-
-    //case for king stacking on empty slot
-    if (cardValue === 'king' && targetCardValue === 'empty') {
-        return true;
     }
 
     return (
@@ -150,7 +168,7 @@ function logBoard() {
     console.log('foundation4:', foundationSlot4);
 }
 
-function findBoardLocation(card) {
+function findBoardLocation(card) { // find the array a card is located in
     const foundationSlots = [foundationSlot1, foundationSlot2, foundationSlot3, foundationSlot4];
     const reserveArrays = [reserveStock, reserveCurrent];
 
@@ -166,7 +184,7 @@ function findBoardLocation(card) {
         }
     }
 
-    return null; // Card not found in any array
+    return null; //didnt find card
 }
 
 
@@ -176,7 +194,6 @@ function refreshCards() {
         const tableauSlot = document.querySelector(`.tableau-slot-${i}`);
         tableau[i - 1] = [...tableauSlot.children];
 
-        // Set dataset.side = 'front' for the last child element
         const lastChild = tableauSlot.lastElementChild;
         if (lastChild) {
             lastChild.dataset.side = 'front';
@@ -215,22 +232,30 @@ function isValidFoundationMove(card, foundationSlot) {
     const cardValue = card.dataset.value;
     const cardSuit = card.dataset.suit;
 
+    //check if card is the last in its slot 
+    const parentChildren = card.parentElement.children;
+    const isLastCard = card === parentChildren[parentChildren.length - 1];
+
+    if (!isLastCard) {
+        return false;
+    }
+
     let slotCards;
 
-    if(!foundationSlot.classList.contains('card')) {
+    if (!foundationSlot.classList.contains('card')) {
         slotCards = foundationSlot.querySelectorAll('.card');
-    }
-    else {
+    } else {
         slotCards = foundationSlot.parentElement.querySelectorAll('.card');
     }
+
     if (slotCards.length === 0) {
-        return cardValue === 'ace'; // Only allow placing an Ace if the slot is empty
+        return cardValue === 'ace'; //can only place ace if its an empty foundation slot
     } else {
         const topCard = slotCards[slotCards.length - 1];
         const topCardValue = topCard.dataset.value;
         const topCardSuit = topCard.dataset.suit;
 
-        return (
+        return ( //place other cards
             cardSuit === topCardSuit &&
             values.indexOf(cardValue) === values.indexOf(topCardValue) + 1
         );
@@ -263,10 +288,9 @@ function handleDragStart(event) {
     if (event.button === 0 && event.target.parentNode.dataset.side === 'front') {
         payload.card = event.target.parentNode;
         payload.initialBoardLocation = findBoardLocation(payload.card);
-
-        // Check if the card comes from reserveCurrent
+        //check if the cards are valid to drag and add them to the stack
         if (reserveCurrent.includes(payload.card)) {
-            payload.stack = [payload.card]; // Set the payload stack to the single card being dragged
+            payload.stack = [payload.card];
         } 
         else {
             const index = payload.initialBoardLocation.indexOf(payload.card);
@@ -294,14 +318,16 @@ function handleDrop(event) {
     if (payload.card) {
         if (elementUnderDrag && elementUnderDrag.classList.contains('foundation-slot')) {
             if(isValidFoundationMove(payload.card, elementUnderDrag)) {
-                payload.card.style.top = '10px';
+                payload.card.style.top = '49px';
                 payload.card.style.transform = null;
                 payload.card.classList.add('foundation-slot');
                 if(!elementUnderDrag.classList.contains('card')) {
                     elementUnderDrag.appendChild(payload.card);
+                    madeMove();
                 }
                 else {
                     elementUnderDrag.parentElement.appendChild(payload.card);
+                    madeMove();
                 }
 
                 for (let key in tableau) {
@@ -366,10 +392,10 @@ function handleDrop(event) {
                         }
 
                         if (targetPile.children.length === 0) {
-                            if (payload.card.dataset.value === 'king') {
-                                //targetPile.appendChild(payload.card);
+                            if (payload.card.dataset.value === 'king') { // trying to place king on ampty slot
                                 if(payload.card.classList.contains('reserve-current-card')) {
                                     targetPile.appendChild(payload.card);
+                                    madeMove();
                                 }
                                 else {
                                     payload.stack.forEach(card => {
@@ -382,6 +408,7 @@ function handleDrop(event) {
                                         }
                                         targetPile.appendChild(card);
                                     });
+                                    madeMove();
                                 }
                                 payload.card.style.transform = null;
                                 payload.card.style.top = '-1px';
@@ -403,6 +430,7 @@ function handleDrop(event) {
                         else {
                             if(payload.card.classList.contains('reserve-current-card')) {
                                 targetPile.appendChild(payload.card); //only place one card if its from the reserve
+                                madeMove();
                             }
                             else {
                                 payload.stack.forEach(card => {
@@ -410,9 +438,10 @@ function handleDrop(event) {
                                         const lastChild = targetPile.children[targetPile.children.length - 1];
                                         const topValue = parseInt(lastChild ? lastChild.style.top || 0 : 0);
                                         card.style.top = `${topValue + 20}px`;
-                                        targetPile.appendChild(card);
+                                        targetPile.appendChild(card);;
                                     }
-                                });                                                             
+                                });     
+                                madeMove();                                                        
                             }
                             payload.card.style.transform = null;
                             if (elementUnderDrag.style.top === '') {
@@ -472,7 +501,9 @@ document.addEventListener('mousemove', throttle((event) => {
 
         payload.card.style.display = 'none';
 
-        elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY);
+        //determine what card we are hovvering over
+        elementUnderDrag = document.elementFromPoint(event.clientX, event.clientY); 
+        //change to on drop to fix performance issues
 
         payload.card.style.display = '';
 
@@ -481,17 +512,6 @@ document.addEventListener('mousemove', throttle((event) => {
 
             if (parent) {
                 elementUnderDrag = parent;
-            }
-            //console.log(elementUnderDrag);
-        }
-
-        if (elementUnderDrag.classList.contains('tableau-slot')) {
-            if (elementUnderDrag.childElementCount === 0) {
-                //console.log(elementUnderDrag)
-                //console.log('Empty tableau slot');
-            } else {
-                // This tableau slot is not empty
-                //console.log('Not an empty tableau slot');
             }
         }
     }
@@ -511,18 +531,17 @@ function reserveStockClickHandler(event) {
     }
 }
 
-window.onload = () => {
+window.onload = () => { //init the game
     shuffleDeck();
     showFullDeck();
     dealDeck();
     refreshCards();
-    //console.log('tableau:', tableau);
-    //console.log('reserve:', reserveStock);
     showFullDeck();
     document.querySelectorAll('.reserve-card').forEach(card => {
         card.addEventListener('click', reserveStockClickHandler);
     });
     document.querySelector('.reserve-stock').addEventListener('click', (event) => {
+        madeMove(); 
         if (event.target === document.querySelector('.reserve-stock')) {
             if(reserveStock.length == 0) {
                 Array.from(document.querySelectorAll('.reserve-current-card')).findLast(element => {
